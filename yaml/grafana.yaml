@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: grafana-app
+metadata:
+  annotations:
+    description: To deploy grafana UI
+    tags: instant-app
+  name: grafana-selfserve
+  namespace: openshift
+  selfLink: /oapi/v1/namespaces/openshift/templates/grafana-selfserve
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      description: Exposes and load balances the application pods
+    name: ${GRAFANA_NAME}
+  spec:
+    ports:
+    - name: web
+      port: 80
+      targetPort: 3000
+    selector:
+      name: ${GRAFANA_NAME}
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: ${GRAFANA_NAME}-route
+  spec:
+    host: ${GRAFANA_NAME}.${OSE_MASTER_CLUSTER}.${SITE}.dreamworks.net
+    to:
+      kind: Service
+      name: ${GRAFANA_NAME}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      description: Defines how to deploy the application server
+    name: ${GRAFANA_NAME}-dc
+  spec:
+    replicas: 1
+    selector:
+      name: ${GRAFANA_NAME}
+    strategy:
+      limits:
+        cpu: 150m
+        memory: 100Mi
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          name: ${GRAFANA_NAME}
+        name: ${GRAFANA_NAME}-dc
+      spec:
+        containerNames:
+        - ${GRAFANA_NAME}
+        containers:
+          image: ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_VERSION}
+          imagePullPolicy: Always
+          name: ${GRAFANA_NAME}
+          ports:
+          - containerPort: 80
+            name: http
+          resources:
+            limits:
+              cpu: 150m
+              memory: 100Mi
+          securityContext:
+            capabilities: {}
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          volumes:
+          - emptyDir: {}
+            name: tmp
+        dnsPolicy: ClusterFirst
+        nodeSelector:
+          region: gld
+        restartPolicy: Always
+        serviceAccount: ""
+parameters:
+- description: Service environment
+  name: SITE
+  required: true
+  value: gld
+- description: Name of the docker registry default to GLD
+  name: DOCKER_REGISTRY
+  required: true
+  value: psoregistry.gld.dreamworks.net:5000/Libaray
+- description: Name of the docker image
+  name: DOCKER_IMAGE
+  required: true
+- description: Name of the application
+  name: KIBANA_NAME
+  required: true
+- description: Image Version
+  name: IMAGE_VERSION
+- description: Name of OpenShift cluster 
+  name: OSE_MASTER_CLUSTER
+  value: "ose"

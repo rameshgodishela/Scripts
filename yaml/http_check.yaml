@@ -1,0 +1,13 @@
+init_config:
+  skip_event: true
+instances:
+  - name: Hawkular_Metrics
+    url: https://hawkular-metrics.b-ose.gld.dreamworks.net/hawkular/metrics
+    timeout: 10
+    content_match: 'Hawkular-Metrics'
+    http_response_status_code: 200
+    disable_ssl_validation: true
+    tags:
+      - service:hawkular
+      - env:prod
+      - cluster:b-ose
